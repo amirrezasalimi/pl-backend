@@ -140,13 +140,13 @@ class ModLoader {
                 let bundle = await rollup({
                     input: file_path,
                 });
-                let _res = await bundle.generate({ format: "commonjs" });
+                let _res = await bundle.generate({ format: "commonjs",exports:"auto" });
                 if (_res.output.length) {
                     return resolve(_res.output[0].code)
                 }
             }
-            catch (e) {
-                reject(e);
+            catch (e) { 
+                reject("bundle client.js error");
             }
         })
     }
@@ -158,7 +158,7 @@ class ModLoader {
                 let bundle = await rollup({
                     input: file_path,
                 });
-                let _res = await bundle.generate({ format: "commonjs" });
+                let _res = await bundle.generate({ format: "commonjs",exports:"auto" });
                 if (_res.output.length) {
                     return resolve(_res.output[0].code)
                 }

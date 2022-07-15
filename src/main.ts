@@ -4,22 +4,27 @@ import http from "http"
 import { APP_PORT, MODS_DIR } from './constants/config';
 import PixelLandEntry from './core/app/entry';
 import chokidar from 'chokidar';
-import { exec } from "child_process"
 import touch from 'touch'
 var cors = require('cors')
+var bodyParser = require('body-parser')
 
 const app = express();
 app.use(cors())
+app.use( bodyParser.json() );       // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+  extended: true
+})); 
 // your beautiful code...
 console.log('PixelLand is starting....');
 
-const server = http.createServer(app);
 // pixel land
 PixelLandEntry(app)
-// websocket
-PixelLandWs(server);
+
 
 // end
+const server = http.createServer(app);
+// websocket
+PixelLandWs(server);
 
 
 if (process.env.NODE_ENV !== 'production') {

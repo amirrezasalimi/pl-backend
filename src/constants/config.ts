@@ -3,6 +3,7 @@ export const APP_PORT = 3001;
 export const SOCKET_PORT = 80;
 export const SOCKET_PATH = "/ws";
 export const SERVER_URL = "http://localhost:" + APP_PORT;
+export const JWT_PRIVATE_KEY="#@#$%n.,%^*(_+cvfs"
 // MOD & STATE
 export const MAIN_DATABASE = "../data/main.sqlite";
 export const MODS_DIR = "../mods";

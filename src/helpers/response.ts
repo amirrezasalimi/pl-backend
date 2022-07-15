@@ -1,4 +1,4 @@
-export const ok = (data: any,msg?:string) => {
+export const ok = (data: any={},msg?:string) => {
     return {
         ok: true,
         message: msg,

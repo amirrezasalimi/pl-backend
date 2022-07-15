@@ -1,4 +1,4 @@
-import { Express } from "express"
+import {Express} from "express"
 import PL from "../../global/pixel-land";
 import modLoader from "../mod/mod-loader";
 import database from "../services/db/database";

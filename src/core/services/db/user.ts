@@ -8,11 +8,14 @@ class UserService {
         return database.db.prepare(`SELECT * FROM ${this.table} WHERE id = ?`).get(id);
     }
     add(user: User) {
-        const check = database.db.prepare(`SELECT * FROM ${this.table} WHERE username = ? OR email = ?`).get(user.email, user.username);
+        const check = database.db.prepare(`SELECT * FROM ${this.table} WHERE email = ?`).get(user.email);
         if (check) {
             return false;
         }
         return database.db.prepare(`INSERT INTO ${this.table} (fullname, email, password) VALUES (?, ?, ?)`).run(user.fullname, user.email, user.password);
+    }
+    getByEmail(email: string) {
+        return database.db.prepare(`SELECT * FROM ${this.table} WHERE email = ?`).get(email);
     }
     update(id: number, user: User) {
         return database.db.prepare(`UPDATE ${this.table} SET fullname = ?, email = ?, password = ? WHERE id = ?`).run(user.fullname, user.email, user.password, id);
@@ -37,6 +40,7 @@ class UserService {
             return database.db.prepare(`INSERT INTO ${this.table} (user_id, roles) VALUES (?, ?)`).run(userId, role);
         }
     }
+
 }
 const userService = new UserService();
 export default userService;
