@@ -41,19 +41,23 @@ export default function PixelLandRouteHandler(app: Express) {
     })
 
     // get mod client.js
-    app.get("/mod/:name/client.js", (req: Request, res: Response) => {
+    app.get("/mod/:name/client.js", async (req: Request, res: Response) => {
 
         const name = req.params.name;
         const mod = modState.mod_by_name?.[name];
         if (mod) {
-            let _minifyPath=path.join(__dirname, MODS_DIR, name,MOD_DIST, "client.min.js");
-            if (!mod.minify_client_js) {
-                const _fileContent = readFileSync(mod.client_file).toString();
-                const _minify = UglifyJS.minify(_fileContent)
-                writeFileSync(_minifyPath, _minify.code);
-                mod.minify_client_js = _minifyPath;
+            let newFilePath=path.join(__dirname, MODS_DIR, name,MOD_DIST, "client.js");
+            if (!mod.new_client_file) {
+                const _fileContent = await modLoader.bundleClientCode(name) as string;
+                if(_fileContent){
+                    const _minify = UglifyJS.minify(_fileContent)
+                    writeFileSync(newFilePath, _minify.code);
+                    mod.new_client_file = newFilePath;
+                }
             }
-            res.sendFile(mod.minify_client_js ?? "");
+            if(mod.new_client_file){
+                res.sendFile(mod.new_client_file);
+            }
             // minify before
         } else {
             res.status(404).json(error(`mod ${name} not found`));

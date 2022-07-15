@@ -1,6 +1,0 @@
-{
-    "version": "1.0.0",
-    "socket_address": [
-        "tcp://localhost:5555"
-    ]
-}

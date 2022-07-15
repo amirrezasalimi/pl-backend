@@ -8,6 +8,10 @@ export default interface Mod {
     status: "mounted" | "deactive" | "not-mounted";
     client_file: string;
     server_file: string;
+    
+    new_server_file: string | null;
+    new_client_file: string | null;
+
     assets_dir: string;
     last_cache_client_ts: number;
     last_cache_server_ts: number;
@@ -15,5 +19,4 @@ export default interface Mod {
     last_updated_ts: number; // timestamp
 
     server_instance: any;
-    minify_client_js?: string;
 }

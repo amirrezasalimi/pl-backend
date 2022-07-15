@@ -42,8 +42,13 @@ class ModLoader {
                             description: mod_info.description ?? "unknown",
                             dependencies: mod_info.dependencies ?? [],
                             status: mod_info.disabled ? "deactive" : "not-mounted",
+
                             client_file: `${_mod_dir}/client.js`,
                             server_file: `${_mod_dir}/server.js`,
+
+                            new_client_file: null,
+                            new_server_file: null,
+
                             last_cache_client_ts: 0,
                             last_cache_server_ts: 0,
                             last_updated_ts: 0,
@@ -76,14 +81,13 @@ class ModLoader {
     }
     async mountModScript(name: string) {
         // mount mod server.js
-        const _file = modState.mod_by_name[name].server_file;
- 
+        const _file = modState.mod_by_name[name].new_server_file;
         if (_file) {
-            try { 
+            try {
                 let _mod = await import(_file);
                 if (_mod.default) {
-                    let _mod_instance; 
-                    _mod_instance = _mod.default; 
+                    let _mod_instance;
+                    _mod_instance = _mod.default;
                     _mod_instance = new _mod_instance();
                     modState.mod_by_name[name].server_instance = _mod_instance;
                     log.blue(`pixel-land: mount mod ${name}`);
@@ -93,7 +97,6 @@ class ModLoader {
             catch (e: any) {
                 log.red(`pixel-land: [error] mount mod '${name}', ${e.message}`, e.stack);
             }
-
         }
     }
     async mountLoadedMods() {
@@ -129,13 +132,31 @@ class ModLoader {
     getMods() {
         return modState.mods_names;
     }
-    async bundleServerCode(mod_name: string) {
-        const server_file_path = path.join(__dirname, MODS_DIR, mod_name, "server.js");
+
+    async bundleClientCode(name: string) {
+        const file_path = modState.mod_by_name[name].client_file;
+        return new Promise(async (resolve, reject) => {
+            try {
+                let bundle = await rollup({
+                    input: file_path,
+                });
+                let _res = await bundle.generate({ format: "commonjs" });
+                if (_res.output.length) {
+                    return resolve(_res.output[0].code)
+                }
+            }
+            catch (e) {
+                reject(e);
+            }
+        })
+    }
+    async bundleServerCode(name: string) {
+        const file_path = modState.mod_by_name[name].server_file;
 
         return new Promise(async (resolve, reject) => {
             try {
                 let bundle = await rollup({
-                    input: server_file_path,
+                    input: file_path,
                 });
                 let _res = await bundle.generate({ format: "commonjs" });
                 if (_res.output.length) {
@@ -151,16 +172,7 @@ class ModLoader {
         return new Promise(async (resolve, reject) => {
             const _codes = await this.bundleServerCode(mod_name) as string;
             if (_codes) {
-                babel.transform(_codes, {
-                    plugins: [
-                        '@babel/plugin-transform-modules-commonjs'
-                    ]
-                }, (err, result) => {
-                    if (err || !result) {
-                        return reject(err);
-                    }
-                    resolve(result.code as string);
-                })
+                resolve(_codes);
             } else {
                 reject("no code");
             }
@@ -171,7 +183,7 @@ class ModLoader {
         const _codes = await this.transformServerCode(mod_name) as string;
         const new_server_file_path = path.join(__dirname, MODS_DIR, mod_name, MOD_DIST, "server.js");
         modState.mod_by_name[mod_name].last_cache_server_ts = Date.now();
-        modState.mod_by_name[mod_name].server_file = new_server_file_path;
+        modState.mod_by_name[mod_name].new_server_file = new_server_file_path;
         if (_codes) {
             const _dist_dir = path.dirname(new_server_file_path);
             if (!existsSync(_dist_dir)) {
@@ -197,14 +209,6 @@ class ModLoader {
         return assets
     }
 
-
-    // client tools
-    getClientModFile(name: string) {
-        if (modState.mod_by_name[name]) {
-            return modState.mod_by_name[name].client_file;
-        }
-        throw new Error(`mod ${name} not found`);
-    }
 }
 const modLoader = new ModLoader();
 export default modLoader;
