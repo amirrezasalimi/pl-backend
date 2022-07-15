@@ -1,0 +1,11 @@
+{
+    "id": "player1",
+    "name": "player",
+    "author": "Amirreza salimi",
+    "version": "1.0",
+    "description": "This is a sample plugin",
+    "dependencies": [
+        "client"
+    ],
+    "disabled": false
+}
