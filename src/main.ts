@@ -35,10 +35,10 @@ if (process.env.NODE_ENV !== 'production') {
         },
     }).on("change", () => {
 
-        // todo: add reload mods for server and client files
+        // TODO: add reload mods for server and client files
 
 
-        // todo: remove this
+        // TODO: remove this
         // node js excute command
         touch(`main.ts`)
         console.log("restarting...");

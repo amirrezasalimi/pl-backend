@@ -1,10 +1,15 @@
-import hiBaby from "./src/test";
-
 class Server {
   mounted() {
-    console.log(PL.sharedState);
-    hiBaby();    
-  } 
+    this.sayPing();
+  }
+  sayPing() {
+    setInterval(() => {
+      console.log("ping");
+      PL.ws.broadcast("ping");
+    }, 5000);
+
+    PL.storage.data()
+  }
 
 }
 export default Server;

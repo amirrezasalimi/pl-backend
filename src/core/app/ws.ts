@@ -1,10 +1,10 @@
 import WebSocket from "ws";
 import { SOCKET_PATH, SOCKET_PORT } from "../../constants/config";
 import clientManager from "./socket/client-manager";
-import cp from "child_process"
-import { wsData } from "../../helpers/ws-msg";
+import PL_SHARED from "../../global/pixel-land-shared";
 
-const PixelLandWs = async (server:any) => {
+
+const PixelLandWs = async (server: any) => {
     const wss = new WebSocket.Server({
         // port: SOCKET_PORT,
         server,
@@ -15,12 +15,16 @@ const PixelLandWs = async (server:any) => {
     wss.on('connection', ws => {
         const sid = clientManager.addClient(ws);
         ws.on('message', message => {
-            console.log(`Received message => ${message}`)
+            try {
+                const data = JSON.parse(message.toString());
+                if (typeof data.name === "string") {
+                    PL_SHARED.ws.emitLocal(data.name, data, sid,ws);
+                }
+            }
+            catch (e) {
+                console.log(e);
+            }
         })
-        ws.send(wsData("chat:msg",{
-             
-            
-        }))
     })
 
 };

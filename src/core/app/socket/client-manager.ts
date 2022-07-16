@@ -26,7 +26,6 @@ class ClientManager {
     }
 
 
-
     getClients() {
         return this.sockets;
     }

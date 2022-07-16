@@ -11,3 +11,10 @@
    - command line interface
    - user managment [admin roles]
    - soon
+
+- feature mods:
+   - pixel land base
+      - editor
+      - player
+   - [painting mod]
+   - [chat mod]

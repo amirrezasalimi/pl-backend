@@ -14,15 +14,15 @@ import { Request, Response, Express } from "express";
 
 export default function PixelLandRouteHandler(app: Express) {
 
+    // can accesible by /api prefix
+
     const routes = express.Router();
     // mod list
     routes.get("/mod/list", async (req: Request, res: Response) => {
         const mod_list = modState.mods_names;
-        res.json(ok(
-            {
-                mods: mod_list
-            }
-        ))
+        res.json(ok({
+            mods: mod_list
+        }))
     })
     routes.get("/mod/:name/info.json", async (req: Request, res: Response) => {
         const name = req.params.name;
@@ -135,7 +135,6 @@ export default function PixelLandRouteHandler(app: Express) {
     // admin
     // developer tools
     userRouter.get("/mod/reload-server", (req: Request, res: Response) => {
-
         res.json(ok({
             message: "done"
         }))

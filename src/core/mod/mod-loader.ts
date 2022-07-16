@@ -7,6 +7,12 @@ import { log } from "console-log-colors";
 import { getDirectories } from "../../helpers/get-directories";
 import babel from "@babel/core";
 import { rollup } from "rollup"
+import PixelLandMod from "./pl-mod";
+import pixelLandShared from "../../global/pixel-land-shared";
+import PL_SHARED from "../../global/pixel-land-shared";
+import ModStorage from "../services/storage/mod-storage";
+import ModKeyValueDb from "../services/storage/mod-db";
+import ModWs from "./mod-ws";
 class ModLoader {
     constructor() {
 
@@ -58,7 +64,7 @@ class ModLoader {
 
                         // compile server.js to commonjs
                         await this.writeNewServerCode(name);
-                        modState.mod_state_by_name[name] = {}
+                        modState.mod_state[name] = {}
                         log.blue(`pixel-land: load mod ${name}`);
                     }
                 } catch (e: any) {
@@ -90,8 +96,16 @@ class ModLoader {
                     _mod_instance = _mod.default;
                     _mod_instance = new _mod_instance();
                     modState.mod_by_name[name].server_instance = _mod_instance;
+
+                    const pl_mod = new PixelLandMod();
+                    pl_mod.mod = PL_SHARED.mod;
+                    pl_mod.state = PL_SHARED.state[name];
+                    pl_mod.storage = new ModStorage(name);
+                    pl_mod.db = new ModKeyValueDb(name);
+                    pl_mod.ws = new ModWs(name);
+
+                    _mod_instance.mounted(pl_mod);
                     log.blue(`pixel-land: mount mod ${name}`);
-                    _mod_instance.mounted();
                 }
             }
             catch (e: any) {
@@ -140,12 +154,15 @@ class ModLoader {
                 let bundle = await rollup({
                     input: file_path,
                 });
-                let _res = await bundle.generate({ format: "commonjs",exports:"auto" });
+                let _res = await bundle.generate({
+                    format: "esm", exports: "auto", strict: false,
+
+                });
                 if (_res.output.length) {
                     return resolve(_res.output[0].code)
                 }
             }
-            catch (e) { 
+            catch (e) {
                 reject("bundle client.js error");
             }
         })
@@ -158,7 +175,7 @@ class ModLoader {
                 let bundle = await rollup({
                     input: file_path,
                 });
-                let _res = await bundle.generate({ format: "commonjs",exports:"auto" });
+                let _res = await bundle.generate({ format: "commonjs", exports: "auto" });
                 if (_res.output.length) {
                     return resolve(_res.output[0].code)
                 }
