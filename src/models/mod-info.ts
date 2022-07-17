@@ -7,4 +7,5 @@ export default interface ModInfo{
     dependencies?: string[];
     disabled?: boolean;
     assets?: []
+    priority?: number;
 }

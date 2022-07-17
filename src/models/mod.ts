@@ -19,4 +19,5 @@ export default interface Mod {
     last_updated_ts: number; // timestamp
 
     server_instance: any;
+    priority: number;
 }

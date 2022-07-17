@@ -5,14 +5,11 @@ import path from "path";
 import ModInfo from "../../models/mod-info";
 import { log } from "console-log-colors";
 import { getDirectories } from "../../helpers/get-directories";
-import babel from "@babel/core";
 import { rollup } from "rollup"
 import ModShared from "./mod-shared";
-import pixelLandShared from "../../global/pixel-land-shared";
-import PL_SHARED from "../../global/pixel-land-shared";
-import ModStorage from "../services/storage/mod-storage";
-import ModKeyValueDb from "../services/storage/mod-db";
-import ModWs from "./mod-ws";
+
+import typescript from '@rollup/plugin-typescript';
+
 class ModLoader {
     constructor() {
 
@@ -39,6 +36,8 @@ class ModLoader {
                     if (mod_info) {
                         const _mod_dir = path.join(__dirname, MODS_DIR, name);
 
+                        const isTypeScriptServer = existsSync(path.join(_mod_dir, "server.ts"));
+                        const isTypeScriptClient = existsSync(path.join(_mod_dir, "client.ts"));
                         modState.mods_names.push(name);
                         modState.mod_by_name[name] = {
                             id: mod_info.id,
@@ -49,8 +48,8 @@ class ModLoader {
                             dependencies: mod_info.dependencies ?? [],
                             status: mod_info.disabled ? "deactive" : "not-mounted",
 
-                            client_file: `${_mod_dir}/client.js`,
-                            server_file: `${_mod_dir}/server.js`,
+                            client_file: `${_mod_dir}/${isTypeScriptClient ? 'client.ts' : 'client.js'}`,
+                            server_file: `${_mod_dir}/${isTypeScriptServer ? 'server.ts' : 'server.js'}`,
 
                             new_client_file: null,
                             new_server_file: null,
@@ -60,6 +59,7 @@ class ModLoader {
                             last_updated_ts: 0,
                             server_instance: null,
                             assets_dir: `${_mod_dir}/${MOD_ASSETS}`,
+                            priority: mod_info.priority ?? 2,
                         };
 
                         // compile server.js to commonjs
@@ -71,6 +71,10 @@ class ModLoader {
                     log.red(`pixel-land: [error] load mod '${name}', ${e.message}`, e.stack);
                 }
             }
+            // sort mods by priority
+            modState.mods_names.sort((a, b) => {
+                return modState.mod_by_name[a].priority - modState.mod_by_name[b].priority;
+            });
         }
     }
     isModeMounted(name: string) {
@@ -79,10 +83,10 @@ class ModLoader {
     async disposeMod(name: string) {
         // unmount mod server.js
         const _instance = modState.mod_by_name[name].server_instance;
-        if (_instance && typeof _instance.unmounted === "object") {
-            _instance.unmounted();
+        if (_instance && typeof _instance.dispose === "object") {
+            _instance.dispose();
             modState.mod_by_name[name].server_instance = null;
-            log.grey(`pixel-land: unmount mod ${name}`);
+            log.grey(`pixel-land: dispose mod ${name}`);
         }
     }
     async mountModScript(name: string) {
@@ -93,14 +97,22 @@ class ModLoader {
                 let _mod = await import(_file);
                 if (_mod.default) {
                     let _mod_instance;
-                    _mod_instance = _mod.default;
-                    _mod_instance = new _mod_instance();
-                    modState.mod_by_name[name].server_instance = _mod_instance;
+                    if (typeof _mod.default == "function") {
+                        _mod_instance = _mod.default;
+                        _mod_instance = new _mod_instance();
+                        modState.mod_by_name[name].server_instance = _mod_instance;
 
-                    const pl_mod = new ModShared(name);
+                        const pl_mod = new ModShared(name);
+                        if (typeof _mod_instance.mounted !== "undefined") {
+                            _mod_instance.mounted(pl_mod);
+                            log.blue(`pixel-land: mount mod ${name}`);
+                        } else {
+                            log.red(`pixel-land: [error] mod ${name} has no mounted function`);
+                        }
+                    } else {
+                        log.yellow(`pixel land: mod ${name} is not a class [not mounted]`);
+                    }
 
-                    _mod_instance.mounted(pl_mod);
-                    log.blue(`pixel-land: mount mod ${name}`);
                 }
             }
             catch (e: any) {
@@ -148,6 +160,13 @@ class ModLoader {
             try {
                 let bundle = await rollup({
                     input: file_path,
+                    plugins: [
+                        typescript({
+                            compilerOptions: {
+                                lib: ["es5", "es6", "es2021"],
+                            },
+                        })
+                    ]
                 });
                 let _res = await bundle.generate({
                     format: "esm", exports: "auto", strict: false,
@@ -169,6 +188,13 @@ class ModLoader {
             try {
                 let bundle = await rollup({
                     input: file_path,
+                    plugins: [
+                        typescript({
+                            compilerOptions: {
+                                lib: ["es5", "es6", "es2021"],
+                            },
+                        })
+                    ]
                 });
                 let _res = await bundle.generate({ format: "commonjs", exports: "auto" });
                 if (_res.output.length) {
