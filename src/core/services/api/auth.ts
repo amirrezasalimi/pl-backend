@@ -37,6 +37,7 @@ class AuthService {
             }
         })
     }
+    guestEmailPrefix = "guest.";
     register(data: IRegister) {
         const isGuest = data.email.startsWith(this.guestEmailPrefix) ? "1" : "0";
         const check = userService.add({
@@ -56,7 +57,6 @@ class AuthService {
             };
         }
     }
-    guestEmailPrefix = "guest.";
     async asGuest() {
         const _newId = makeid(8);
         const fullname = `Guest-${_newId}`;

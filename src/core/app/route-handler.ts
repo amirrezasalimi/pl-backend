@@ -150,7 +150,7 @@ export default function PixelLandRouteHandler(app: Express) {
                 user: {
                     fullname: user.fullname,
                     email: user.email,
-                    isGuest: user.isGuest=="1"
+                    isGuest: user.isGuest=="1",
                 }
             }
         ))

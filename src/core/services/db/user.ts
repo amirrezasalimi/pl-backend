@@ -12,7 +12,7 @@ class UserService {
         if (check) {
             return false;
         }
-        return database.db.prepare(`INSERT INTO ${this.table} (fullname, email, password) VALUES (?, ?, ?)`).run(user.fullname, user.email, user.password);
+        return database.db.prepare(`INSERT INTO ${this.table} (fullname, email, password, isGuest) VALUES (?, ?, ?, ?)`).run(user.fullname, user.email, user.password, user.isGuest);
     }
     getByEmail(email: string) {
         return database.db.prepare(`SELECT * FROM ${this.table} WHERE email = ?`).get(email);
