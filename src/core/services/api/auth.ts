@@ -1,5 +1,7 @@
 import { JWT_PRIVATE_KEY } from "../../../constants/config";
 import { bcryptCheckPassword, bcryptPassword } from "../../../helpers/bcrypt-password";
+import makeid from "../../../helpers/makeid";
+import { nanoid } from "../../../helpers/nanoid";
 import nowTs from "../../../helpers/now-ts";
 import ILogin from "../../../models/api/login";
 import IRegister from "../../../models/api/register";
@@ -19,6 +21,11 @@ class AuthService {
                     const t = new Date();
                     t.setSeconds(t.getSeconds() + expireSeconds);
                     resolve({
+                        user: {
+                            fullname: user.fullname,
+                            email: user.email,
+                            isGuest: user.isGuest,
+                        },
                         token: token,
                         expires_ts: t.getTime(), // 7 days // timestamp
                     })
@@ -31,13 +38,53 @@ class AuthService {
         })
     }
     register(data: IRegister) {
-        return userService.add({
+        const isGuest = data.email.startsWith(this.guestEmailPrefix) ? "1" : "0";
+        const check = userService.add({
             email: data.email,
             password: bcryptPassword(data.password),
             fullname: "",
             roles: "",
-            username: ""
+            username: "",
+            isGuest
         });
+
+        if (check) {
+            return {
+                fullname: data.fullname,
+                email: data.email,
+                isGuest
+            };
+        }
+    }
+    guestEmailPrefix = "guest.";
+    async asGuest() {
+        const _newId = makeid(8);
+        const fullname = `Guest-${_newId}`;
+        const email = `${this.guestEmailPrefix}${_newId}@pl.io`;
+        const password = nanoid(8);
+        let register_res = this.register({
+            fullname,
+            email,
+            password: password,
+        })
+        if (register_res) {
+            const token = await this.login({
+                email,
+                password: password,
+            })
+            console.log(token);
+
+            if (token) {
+                return {
+                    user: {
+                        fullname,
+                        email,
+                    },
+                    token: (token as any).token
+                }
+            }
+        }
+        return false;
     }
 }
 const authService = new AuthService();

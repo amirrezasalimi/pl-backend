@@ -5,13 +5,10 @@ export class Client {
         PL = _;
         console.log('Client mounted Moew😍');
 
-        this.wsOn('ping', () => {
+        PL.ws.on('ping', () => {
             console.log('ping');
             this.x += 10
         })
-    }
-    wsOn(name, data) {
-        PL.ws.on(this.sid, name, data);
     }
     update() {
         const d = PL.vis.getDrawDetail({

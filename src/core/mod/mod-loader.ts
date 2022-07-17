@@ -7,7 +7,7 @@ import { log } from "console-log-colors";
 import { getDirectories } from "../../helpers/get-directories";
 import babel from "@babel/core";
 import { rollup } from "rollup"
-import PixelLandMod from "./pl-mod";
+import ModShared from "./mod-shared";
 import pixelLandShared from "../../global/pixel-land-shared";
 import PL_SHARED from "../../global/pixel-land-shared";
 import ModStorage from "../services/storage/mod-storage";
@@ -97,12 +97,7 @@ class ModLoader {
                     _mod_instance = new _mod_instance();
                     modState.mod_by_name[name].server_instance = _mod_instance;
 
-                    const pl_mod = new PixelLandMod();
-                    pl_mod.mod = PL_SHARED.mod;
-                    pl_mod.state = PL_SHARED.state[name];
-                    pl_mod.storage = new ModStorage(name);
-                    pl_mod.db = new ModKeyValueDb(name);
-                    pl_mod.ws = new ModWs(name);
+                    const pl_mod = new ModShared(name);
 
                     _mod_instance.mounted(pl_mod);
                     log.blue(`pixel-land: mount mod ${name}`);

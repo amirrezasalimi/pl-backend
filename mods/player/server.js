@@ -1,5 +1,7 @@
+let PL;
 class Server {
-  mounted() {
+  mounted(_) {
+    PL=_;
     this.sayPing();
   }
   sayPing() {
@@ -8,7 +10,6 @@ class Server {
       PL.ws.broadcast("ping");
     }, 5000);
 
-    PL.storage.data()
   }
 
 }

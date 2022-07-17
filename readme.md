@@ -6,7 +6,7 @@
 ## Todo
 - use vm2 for running mod server codes to avoid security issues
 - login guest
-
+- use docstify for documentation [mode development first]
 - work on [core] mod
    - command line interface
    - user managment [admin roles]

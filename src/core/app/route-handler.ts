@@ -11,6 +11,7 @@ import authService from "../services/api/auth";
 import userMidleware from "../midleware/user";
 import express from "express"
 import { Request, Response, Express } from "express";
+import { User } from "../../models/user";
 
 export default function PixelLandRouteHandler(app: Express) {
 
@@ -113,14 +114,16 @@ export default function PixelLandRouteHandler(app: Express) {
         const email = req.body.email;
         const password = req.body.password;
         if (email && password) {
-            const check = authService.register({
+            const _user = authService.register({
                 email: email,
                 password: password
             })
-            if (check) {
-                res.json(ok())
+            if (_user) {
+                res.json(ok({
+                    user: _user
+                }))
             } else {
-                res.json(error("email already exists"))
+                res.status(400).json(error("email already exists"))
             }
         } else {
             res.status(400).json(error("email and password required"));
@@ -128,10 +131,31 @@ export default function PixelLandRouteHandler(app: Express) {
 
 
     })
-
+    routes.post("/user/as-guest", async (req: Request, res: Response) => {
+        const guest = await authService.asGuest();
+        if (guest) {
+            res.json(ok(guest))
+        } else {
+            res.json(error())
+        }
+    })
     // routes with user
     const userRouter = express.Router();
     userRouter.use(userMidleware)
+
+    userRouter.get("/check", (req: Request, res: Response) => {
+        const user = (req as any).user as User;
+        res.json(ok(
+            {
+                user: {
+                    fullname: user.fullname,
+                    email: user.email,
+                    isGuest: user.isGuest=="1"
+                }
+            }
+        ))
+    })
+
     // admin
     // developer tools
     userRouter.get("/mod/reload-server", (req: Request, res: Response) => {
