@@ -3,7 +3,7 @@ import modLoader from "../mod/mod-loader";
 import modState from "../../global/mods";
 import { error, ok } from "../../helpers/response";
 import ModInfo from "../../models/mod-info";
-import { existsSync, readFileSync, writeFileSync } from "fs-extra";
+import { existsSync, readFileSync, removeSync, writeFileSync } from "fs-extra";
 import { MODS_DIR, MOD_DIST, SERVER_URL } from "../../constants/config";
 import UglifyJS from "uglify-js";
 import path from "path"

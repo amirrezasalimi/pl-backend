@@ -14,16 +14,20 @@ const PixelLandWs = async (server: any) => {
 
     wss.on('connection', ws => {
         const sid = clientManager.addClient(ws);
+        PL_SHARED.ws.emitLocal("client:connect", {}, sid, ws);
         ws.on('message', message => {
             try {
                 const data = JSON.parse(message.toString());
                 if (typeof data.name === "string") {
-                    PL_SHARED.ws.emitLocal(data.name, data, sid,ws);
+                    PL_SHARED.ws.emitLocal(data.name, data, sid, ws);
                 }
             }
             catch (e) {
                 console.log(e);
             }
+        })
+        ws.on('close', () => {
+            PL_SHARED.ws.emitLocal("client:disconnect", {}, sid, ws);
         })
     })
 

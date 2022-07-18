@@ -1,5 +1,5 @@
 import modState from "../../global/mods";
-import fs, { existsSync, fsync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from "fs-extra"
+import fs, { existsSync, fsync, mkdirSync, readFileSync, readJSONSync, rmdirSync, unlinkSync, writeFileSync } from "fs-extra"
 import { MODS_DIR, MOD_ASSETS, MOD_DIST } from "../../constants/config";
 import path from "path";
 import ModInfo from "../../models/mod-info";
@@ -8,12 +8,9 @@ import { getDirectories } from "../../helpers/get-directories";
 import { rollup } from "rollup"
 import ModShared from "./mod-shared";
 
-import typescript from '@rollup/plugin-typescript';
-
 class ModLoader {
-    constructor() {
-
-    }
+    modClientDir = `client`;
+    modServerDir = `server`;
     async loadModFile(modName: string, filename: string) {
         return new Promise((resolve, reject) => {
             const _filename = path.join(__dirname, MODS_DIR, modName, filename);
@@ -29,15 +26,57 @@ class ModLoader {
         // load all mods
         let names = (await this.loadModNames()) as string[];
         if (names.length) {
+
             for (let name of names) {
                 try {
                     let mod_info = await this.loadModFile(name, "info.json") as ModInfo;
                     mod_info = JSON.parse(mod_info.toString());
                     if (mod_info) {
+                        const mod_status = mod_info.disabled ? "deactive" : "not-mounted";
+
+                        if (mod_status === "deactive") {
+                            log.yellow(`pixel-land: mod ${name} is deactive`);
+                            continue;
+                        }
                         const _mod_dir = path.join(__dirname, MODS_DIR, name);
 
-                        const isTypeScriptServer = existsSync(path.join(_mod_dir, "server.ts"));
-                        const isTypeScriptClient = existsSync(path.join(_mod_dir, "client.ts"));
+                        let client_file = "";
+                        let server_file = "";
+
+                        const isServerTs = existsSync(path.join(_mod_dir, `${this.modServerDir}/index.ts`));
+                        const isClientTs = existsSync(path.join(_mod_dir, `${this.modClientDir}/index.ts`));
+
+
+
+                        server_file = `${_mod_dir}/${this.modServerDir}/${isServerTs ? 'index.ts' : 'index.js'}`;
+
+                        if (mod_info.client) {
+                            client_file = `${_mod_dir}/${mod_info.client}`;
+                        } else {
+                            client_file = `${_mod_dir}/${this.modClientDir}/${isClientTs ? 'index.ts' : 'index.js'}`;
+                        }
+
+
+                        if (mod_info.server) {
+                            server_file = `${_mod_dir}/${mod_info.server}`;
+                        } else {
+                            server_file = `${_mod_dir}/${this.modServerDir}/${isServerTs ? 'index.ts' : 'index.js'}`;
+                        }
+
+                        let _tsconfig;
+                        const tsConfigPath = path.join(_mod_dir, `tsconfig.json`);
+
+                        if (existsSync(tsConfigPath)) {
+                            try {
+                                _tsconfig = readFileSync(tsConfigPath).toString();
+                                // tsconfig = removeComments(tsconfig);
+                                _tsconfig = JSON.parse(_tsconfig);
+                            }
+                            catch (e) {
+                                log.red(`pixel-land: [error] load tsconfig for mod ${name}`, e);
+                            }
+                        }
+
                         modState.mods_names.push(name);
                         modState.mod_by_name[name] = {
                             id: mod_info.id,
@@ -46,10 +85,10 @@ class ModLoader {
                             author: mod_info.author ?? "unknown",
                             description: mod_info.description ?? "unknown",
                             dependencies: mod_info.dependencies ?? [],
-                            status: mod_info.disabled ? "deactive" : "not-mounted",
+                            status: mod_status,
 
-                            client_file: `${_mod_dir}/${isTypeScriptClient ? 'client.ts' : 'client.js'}`,
-                            server_file: `${_mod_dir}/${isTypeScriptServer ? 'server.ts' : 'server.js'}`,
+                            client_file,
+                            server_file,
 
                             new_client_file: null,
                             new_server_file: null,
@@ -60,12 +99,19 @@ class ModLoader {
                             server_instance: null,
                             assets_dir: `${_mod_dir}/${MOD_ASSETS}`,
                             priority: mod_info.priority ?? 2,
+                            tsconfig: _tsconfig
                         };
+                        if (!existsSync(client_file) || !existsSync(server_file)) {
+                            log.red(`pixel-land: [error] mod ${name} has no client or server file`);
+                            continue;
+                        }
+
 
                         // compile server.js to commonjs
                         await this.writeNewServerCode(name);
                         modState.mod_state[name] = {}
                         log.blue(`pixel-land: load mod ${name}`);
+
                     }
                 } catch (e: any) {
                     log.red(`pixel-land: [error] load mod '${name}', ${e.message}`, e.stack);
@@ -92,6 +138,7 @@ class ModLoader {
     async mountModScript(name: string) {
         // mount mod server.js
         const _file = modState.mod_by_name[name].new_server_file;
+
         if (_file) {
             try {
                 let _mod = await import(_file);
@@ -153,25 +200,28 @@ class ModLoader {
     getMods() {
         return modState.mods_names;
     }
+    resolveEntries(tsconfig: any) {
+        console.log(tsconfig?.compilerOptions?.paths);
 
+        if (tsconfig?.compilerOptions?.paths) {
+            return (Object.entries(
+                tsconfig.compilerOptions.paths
+            ) as any).map((row: any) => ([
+                row[0],
+                row[1][0]
+            ]));
+        }
+        return [];
+    }
     async bundleClientCode(name: string) {
         const file_path = modState.mod_by_name[name].client_file;
+
         return new Promise(async (resolve, reject) => {
             try {
                 let bundle = await rollup({
                     input: file_path,
-                    plugins: [
-                        typescript({
-                            compilerOptions: {
-                                lib: ["es5", "es6", "es2021"],
-                            },
-                        })
-                    ]
                 });
-                let _res = await bundle.generate({
-                    format: "esm", exports: "auto", strict: false,
-
-                });
+                let _res = await bundle.generate({});
                 if (_res.output.length) {
                     return resolve(_res.output[0].code)
                 }
@@ -181,22 +231,22 @@ class ModLoader {
             }
         })
     }
-    async bundleServerCode(name: string) {
-        const file_path = modState.mod_by_name[name].server_file;
 
+    async bundleServerCode(name: string) {
+        let file_path = modState.mod_by_name[name].server_file;
         return new Promise(async (resolve, reject) => {
             try {
                 let bundle = await rollup({
                     input: file_path,
-                    plugins: [
-                        typescript({
-                            compilerOptions: {
-                                lib: ["es5", "es6", "es2021"],
-                            },
-                        })
-                    ]
+                    output: {
+                        format: "cjs",
+                    }
                 });
-                let _res = await bundle.generate({ format: "commonjs", exports: "auto" });
+
+                let _res = await bundle.generate({
+                    format: "commonjs",
+                    exports: "auto",
+                });
                 if (_res.output.length) {
                     return resolve(_res.output[0].code)
                 }

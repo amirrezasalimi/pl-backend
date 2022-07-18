@@ -5,7 +5,9 @@
 
 ## Todo
 - use vm2 for running mod server codes to avoid security issues
-- login guest
+- make typscript package for mod developers
+- install mod packages from package.json file
+- enable sourcemap generation for mod client.js
 - use docstify for documentation [mode development first]
 - work on [core] mod
    - command line interface
@@ -13,8 +15,8 @@
    - soon
 
 - feature mods:
-   - pixel land base
+   - add more features to core mod
       - editor
       - player
-   - [painting mod]
-   - [chat mod]
+   - painting mod
+   - chat mod

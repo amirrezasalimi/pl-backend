@@ -1,3 +1,4 @@
+import clientManager from "../core/app/socket/client-manager"
 import WsEvent from "../core/app/ws-event"
 import modState from "./mods"
 

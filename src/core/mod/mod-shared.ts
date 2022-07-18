@@ -1,6 +1,7 @@
 import modState from "../../global/mods";
 import PL_SHARED from "../../global/pixel-land-shared";
 import sharedState from "../../global/shared-state";
+import clientManager from "../app/socket/client-manager";
 import ModKeyValueDb from "../services/storage/mod-db";
 import ModStorage from "../services/storage/mod-storage";
 import ModWs from "./mod-ws";
@@ -13,6 +14,8 @@ class ModShared {
     storage: ModStorage;
     db: ModKeyValueDb
     ws: ModWs;
+    clientManager = clientManager
+
     constructor(name: string) {
         this.mod_name = name;
         this.storage = new ModStorage(name);

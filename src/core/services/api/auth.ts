@@ -2,11 +2,10 @@ import { JWT_PRIVATE_KEY } from "../../../constants/config";
 import { bcryptCheckPassword, bcryptPassword } from "../../../helpers/bcrypt-password";
 import makeid from "../../../helpers/makeid";
 import { nanoid } from "../../../helpers/nanoid";
-import nowTs from "../../../helpers/now-ts";
 import ILogin from "../../../models/api/login";
 import IRegister from "../../../models/api/register";
 import userService from "../db/user";
-var jwt = require('jsonwebtoken');
+import jwt from "jsonwebtoken";
 class AuthService {
 
     login(data: ILogin) {
@@ -14,6 +13,8 @@ class AuthService {
             const user = userService.getByEmail(data.email);
             if (user) {
                 if (bcryptCheckPassword(data.password, user.password)) {
+                    console.log("hi   ", user);
+                    
                     const token = jwt.sign({
                         id: user.id,
                     }, JWT_PRIVATE_KEY);
@@ -22,6 +23,7 @@ class AuthService {
                     t.setSeconds(t.getSeconds() + expireSeconds);
                     resolve({
                         user: {
+                            id: user.id??0,
                             fullname: user.fullname,
                             email: user.email,
                             isGuest: user.isGuest,
@@ -68,19 +70,18 @@ class AuthService {
             password: password,
         })
         if (register_res) {
-            const token = await this.login({
+            const _user = await this.login({
                 email,
-                password: password,
+                password,
             })
-            console.log(token);
-
-            if (token) {
+            if (_user) {
                 return {
                     user: {
+                        id: (_user as any).user.id,
                         fullname,
                         email,
                     },
-                    token: (token as any).token
+                    token: (_user as any).token
                 }
             }
         }

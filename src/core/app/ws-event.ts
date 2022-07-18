@@ -8,7 +8,7 @@ interface IEventInfo {
 }
 class WsEvent {
     listeners: { [key: string]: IEventInfo[] } = {};
-    on(origin_id: string, event: string, cb: (data: any) => void) {
+    on(origin_id: string, event: string, cb: (...args: any) => void) {
         if (!this.listeners[event]) {
             this.listeners[event] = [];
         }
@@ -22,14 +22,24 @@ class WsEvent {
             return;
         }
         this.listeners[event].forEach(({ cb }) => {
-            cb(data, sid, ws);
+            try {
+                cb(data.data, sid, ws);
+            }
+            catch (e) {
+                console.log(e);
+            }
         });
     }
     emit(ws: WebSocket, event: string, data: any) {
-        ws.send(wsData(
-            event,
-            data,
-        ));
+        try {
+            ws.send(wsData(
+                event,
+                data,
+            ));
+        }
+        catch (e) {
+            console.log(e);
+        }
     }
     broadcast(event: string, data: any = {}) {
         const clients = Object.values(clientManager.getClients());

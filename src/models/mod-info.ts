@@ -1,4 +1,4 @@
-export default interface ModInfo{
+export default interface ModInfo {
     id: number;
     name: string;
     description?: string;
@@ -8,4 +8,6 @@ export default interface ModInfo{
     disabled?: boolean;
     assets?: []
     priority?: number;
+    client?: string
+    server?: string
 }

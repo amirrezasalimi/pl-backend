@@ -20,4 +20,5 @@ export default interface Mod {
 
     server_instance: any;
     priority: number;
+    tsconfig?: any;
 }
